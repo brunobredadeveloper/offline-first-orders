@@ -19,10 +19,11 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
  val operation=operationState.asStateFlow()
  private val noticeState = MutableStateFlow("")
  val notice = noticeState.asStateFlow()
+ init {app.scheduleSync(namespace=namespace)}
  fun setOnline(value: Boolean) { bundle.online = value; onlineState.value = value; app.scheduleSync(force = value,namespace=namespace) }
  fun save(title: String, rawAmount: String, editing: Order?) {
   val cents = runCatching { BigDecimal(rawAmount.trim().replace(',', '.')).movePointRight(2).longValueExact() }.getOrNull()
-  if(title.isBlank() || cents == null || cents <= 0) { noticeState.value = "Preencha um título e valor positivo válido."; return }
+  if(title.isBlank() || cents == null || cents <= 0) { operationState.value="error";noticeState.value = "Preencha um título e valor positivo válido."; return }
   action {
    if(editing == null) bundle.repository.create(title.trim(),cents) else bundle.repository.edit(editing.id,title.trim(),cents)
    noticeState.value = "Pedido salvo localmente."; app.scheduleSync(namespace=namespace)

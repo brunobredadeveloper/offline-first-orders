@@ -1,43 +1,36 @@
-# Offline First Orders
+# Field Orders
 
-An Android portfolio project by **Bruno Breda**: create and edit orders offline, persist them with Room, and synchronize through WorkManager against a durable local simulated server.
+Versão 0.2: experiência Android com múltiplos fluxos, autenticação opcional e identidade visual própria. Pagamentos são fictícios.
 
-## Implemented
-- Compose UI, ViewModel and lifecycle-aware Flow collection.
-- Room order storage and a revision-based outbox.
-- WorkManager unique work, connected-network constraint and exponential retries.
-- Optimistic server versions, stable per-revision request keys and persisted accepted-request receipts.
-- Explicit conflict resolution: keep local or accept remote.
-- Pure Kotlin synchronization rules with JVM tests.
+## Fluxos disponíveis
 
-## Run
-Requires JDK 17 and Android SDK 35; minimum device API 26.
-```sh
-./gradlew :core:test
-./gradlew -PincludeAndroid=true :app:lintDebug :app:assembleDebug
-```
-Use `gradlew.bat` on Windows. For Android Studio, add `includeAndroid=true` to your local Gradle user properties before syncing. The Android module is optional so core tests can run without an SDK.
+Operação comercial verde: painel, criação/edição, busca e filtros, detalhes/versionamento, resolução de conflitos, central de sincronização e perfil.
 
-## Demo
-1. Leave Offline mode enabled; create a few orders.
-2. Restart the app: orders remain stored.
-3. Enable the simulated server and use a connected device; schedule sync and wait for WorkManager.
-4. After an order is synced, select Simulate Server Edit.
-5. Edit that order locally and save; sync detects the version conflict.
-6. Choose Keep My Version to rebase and upload, or Use Remote Version to accept it.
+## Engenharia demonstrada
 
-The mode switch controls the local server stand-in. WorkManager also requires actual connectivity. Work execution is scheduled and is not guaranteed to start immediately.
+Room e preferências têm namespace por usuário. WorkManager recebe a conta na entrada e ignora tarefas de outra sessão; fila com constraints/retries/backoff. Login agenda retomada da fila. O servidor remoto é um simulador persistente no aparelho, não um serviço externo.
 
-## Modules
-| Module | Responsibility |
-| --- | --- |
-| `core` | Immutable models, sync orchestration and pure reconciliation rules |
-| `app` | Room adapters, durable simulated server, WorkManager and Compose UI |
+| Aplicativo Firebase | Package Android |
+|---|---|
+| Field Orders | `dev.breda.orders` |
 
-[ADR 0001](docs/adr/0001-outbox-and-conflicts.md) explains race handling and recovery boundaries.
+## Autenticação Firebase
 
-## Limits and roadmap
-The simulated server is stored on the same device, not accessed through HTTP. No multi-device pull, deletion, login or migrations yet. Next steps: HTTP fake service, DAO/Worker instrumentation tests, accessibility checks and screenshots after device validation.
+1. Crie um projeto no Firebase Console e habilite **Authentication → Sign-in method → Email/Password**. Não é necessário habilitar login anônimo.
+2. Registre o aplicativo Android usando o package da tabela abaixo. Baixe seu `google-services.json`.
+3. No GitHub deste repositório, crie o secret de Actions **FIREBASE_CONFIG_JSON** com o JSON inteiro do aplicativo correspondente. O script CI valida o package e gera um asset de configuração; o arquivo pessoal não é versionado.
+4. Execute a esteira novamente para gerar um APK configurado. Para desenvolvimento local: `FIREBASE_CONFIG_JSON="$(cat /caminho/google-services.json)" python3 scripts/configure_firebase.py`.
+5. Crie conta no aplicativo, saia, entre novamente, envie recuperação de senha e verificação de e-mail. Firebase restaura a sessão. Senhas não são salvas pelo aplicativo.
 
-## Validation
-Core compiled with Kotlin 2.1.20 and Coroutines 1.10.1; **10 JUnit tests passed** via the JUnit Platform runner. See `docs/validation.md`. Android build, generated Room schemas, instrumented database behavior and device UI remain unverified. CI is configured for JVM tests, lint and debug APK generation.
+Sem configuração, o APK oferece **demonstração local** explicitamente identificada. Ela não autentica no Firebase. Autenticação real, entrega de e-mails e isolamento Firestore exigem validar com seu projeto. Os dados locais são separados pelo hash SHA-256 do UID; isso é organização por conta, não criptografia de dados em repouso. Firebase Auth identifica o usuário, mas não transforma simuladores de negócio em uma API de pagamentos autorizada.
+
+## Experiência e animação
+
+Onboarding, splash, formulários de login/cadastro/recuperação, navegação com transições, feedback de carregamento/sucesso/erro via Lottie e perfil. As animações geométricas em `src/main/assets/motion_*.json` foram criadas para este projeto; não dependem de downloads em tempo de execução. Layout Compose com rolagem, estados vazios e componentes Material 3. Testes visuais e acessibilidade no aparelho ainda são necessários.
+
+## Build e validação
+
+A esteira `.github/workflows/ci.yml` executa testes de domínio e/ou SDK, testes de isolamento de sessão, Android Lint e montagem de APK debug. Em **Actions → Tests and APK → Artifacts**, baixe o ZIP de APK e extraia o `.apk`. A chave debug é preservada por cache quando disponível; se o cache for perdido, poderá ser necessário desinstalar a versão anterior. Esse APK é para demonstração, sem publicação de release.
+
+Veja `docs/advanced-experience.md` para o roteiro manual. Testes automatizados de núcleo não substituem teste de navegação e integração Firebase em um celular.
+

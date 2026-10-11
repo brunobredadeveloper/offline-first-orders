@@ -1,1 +1,1 @@
-Offline-first Android orders app with Room, WorkManager, revision-based outbox, optimistic concurrency and explicit conflict resolution.
+Operação comercial verde: painel, criação/edição, busca e filtros, detalhes/versionamento, resolução de conflitos, central de sincronização e perfil.
