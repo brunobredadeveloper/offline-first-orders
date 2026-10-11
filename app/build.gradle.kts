@@ -7,7 +7,7 @@ plugins {
 android {
  namespace = "dev.breda.orders"
  compileSdk = 35
- defaultConfig { applicationId = "dev.breda.orders"; minSdk = 26; targetSdk = 35; versionCode = 2; versionName = "0.2.0" }
+ defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner";  applicationId = "dev.breda.orders"; minSdk = 26; targetSdk = 35; versionCode = 3; versionName = "0.3.0" }
  buildFeatures { compose = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
@@ -37,4 +37,14 @@ dependencies {
  implementation("com.airbnb.android:lottie-compose:6.6.6")
  implementation("androidx.compose.material:material-icons-extended")
  testImplementation("junit:junit:4.13.2")
+}
+
+dependencies {
+ implementation("androidx.core:core-splashscreen:1.0.1")
+ androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.01"))
+ androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+ androidTestImplementation("androidx.test.ext:junit:1.2.1")
+ androidTestImplementation("androidx.test:runner:1.6.2")
+ androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+ debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
