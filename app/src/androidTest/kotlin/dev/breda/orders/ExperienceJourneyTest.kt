@@ -19,8 +19,14 @@ class ExperienceJourneyTest {
  @get:Rule val ui=createEmptyComposeRule()
  private val context get()=InstrumentationRegistry.getInstrumentation().targetContext
  private var scenario:ActivityScenario<MainActivity>?=null
- private fun capture(name:String){val dir=File(context.getExternalFilesDir(null),"ux");dir.mkdirs();UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(File(dir,"$name.png"))}
- private fun click(text:String){val node=ui.onNodeWithText(text);runCatching{node.assertIsDisplayed()}.onFailure{node.performScrollTo()};node.performClick()}
+ private fun capture(name:String){
+  val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+  device.executeShellCommand("mkdir -p /data/local/tmp/breda-ux")
+  device.executeShellCommand("screencap -p /data/local/tmp/breda-ux/$name.png")
+  val bytes=device.executeShellCommand("stat -c %s /data/local/tmp/breda-ux/$name.png").trim().toLongOrNull() ?: 0
+  assertTrue("Screenshot $name must be retained",bytes>100)
+ }
+ private fun click(text:String){val node=ui.onNode(hasText(text) and hasClickAction());runCatching{node.assertIsDisplayed()}.onFailure{node.performScrollTo()};node.performClick()}
  private fun shown(tag:String){ui.waitUntil(15000){ui.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()};ui.onNodeWithTag(tag).assertIsDisplayed()}
  @Before fun prepare(){context.getSharedPreferences("portfolio-account",0).edit().clear().commit();MotionPolicy.freezeForTests=true}
  @After fun finish(){scenario?.close();MotionPolicy.freezeForTests=false}
@@ -36,7 +42,7 @@ class ExperienceJourneyTest {
   click("Explorar demonstração local")
   
   capture("03-home")
-  click("Novo pedido");ui.onNodeWithText("Descrição do pedido").performTextInput("Pedido de teste");click("Salvar pedido");shown("result-loading");capture("04-loading");shown("result-success");capture("05-success");click("Voltar ao painel");click("Novo pedido");click("Salvar pedido");shown("result-error");capture("06-error");click("Voltar ao painel");click("Pedidos");ui.onNodeWithText("Buscar pedido").assertExists();capture("07-history");
+  click("Novo pedido");ui.onNodeWithText("Descrição do pedido").performTextInput("Pedido de teste");click("Salvar pedido");shown("result-loading");capture("04-loading");shown("result-success");capture("05-success");UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack();click("Novo pedido");click("Salvar pedido");shown("result-error");capture("06-error");click("Voltar ao painel");click("Pedidos");ui.onNodeWithText("Buscar pedido").assertExists();capture("07-history");
   click("Conta");ui.onNodeWithText("Sua conta").assertExists();capture("08-account");click("Sair da conta");shown("auth")
  }
  @Test fun lottieAssetsActuallyDrawAndChangeFrames(){
