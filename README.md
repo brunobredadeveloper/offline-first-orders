@@ -1,46 +1,60 @@
 # Field Orders
 
-Versão 0.3: experiência Android com múltiplos fluxos, autenticação opcional e identidade visual própria. Pagamentos são fictícios.
+**Pedidos que continuam disponíveis sem rede, com fila persistente e resolução explícita de conflitos.**
 
-## Identidade e experiência 0.3
+Projeto de **Bruno Breda · breda_dev**. Demonstrar a criação e edição local de pedidos, retentativas e controle de versões sem perder uma edição mais recente durante a sincronização.
 
-Ícone adaptativo compartilhado **breda_dev** nos quatro apps. Splash nativo Android seguido de abertura Lottie contextual por 3,2 segundos (no lançamento, sem repetir na rotação). Formulários com teclado adequado, mostrar/ocultar senha e navegação login/cadastro/recuperação. Estados de operação ocupam uma tela própria: preparação/processamento, sucesso e erro, com animações grandes e ações adequadas ao resultado. A demo deixa os estados rápidos visíveis; isso não altera o contrato do núcleo de pagamentos.
+**Plataforma:** Android nativo · Kotlin · Room · WorkManager  
+**Estado:** implementação de portfólio em evolução; esteira aprovada na execução referenciada.
 
-As esteiras incluem uma jornada instrumentada em emulador: splash, login, cadastro/recuperação, modo local, operação, sucesso/erro, histórico e saída. Também verificam que Lottie renderiza pixels e muda de frame. Capturas e relatórios ficam no artifact `*-ux-evidence`. As capturas usam frame fixo para comparação; as animações permanecem ativas nos APKs normais.
+[Fluxos e demonstração](docs/fluxos.md) · [Engenharia](docs/engenharia.md) · [Builds e evidências](docs/evidencias.md) · [Portfólio completo](https://github.com/brunobredadeveloper/breda-park-wash/blob/main/docs/portfolio-breda-dev.md)
 
-## Fluxos disponíveis
+## O que você pode avaliar
 
-Operação comercial verde: painel, criação/edição, busca e filtros, detalhes/versionamento, resolução de conflitos, central de sincronização e perfil.
+- Painel comercial, criação e edição de pedidos, pesquisa e filtros.
+- Room como base local e WorkManager para retomada da sincronização.
+- Revisões locais e versões remotas com resolução por manter local ou aceitar remoto.
+- Namespace por usuário; workers de outra sessão não podem publicar dados na conta atual.
 
-## Engenharia demonstrada
+## Telas reais
 
-Room e preferências têm namespace por usuário. WorkManager recebe a conta na entrada e ignora tarefas de outra sessão; fila com constraints/retries/backoff. Login agenda retomada da fila. O servidor remoto é um simulador persistente no aparelho, não um serviço externo.
+Capturas do aplicativo executado em emulador Android, recuperadas dos artefatos da esteira. Não são mockups nem fotografias de um aparelho físico. A origem e os limites estão em [evidências](docs/evidencias.md).
 
-| Aplicativo Firebase | Package Android |
-|---|---|
-| Field Orders | `dev.breda.orders` |
+<img src="docs/imagens/03-home.png" alt="Field Orders — Painel inicial" width="260" />
+<img src="docs/imagens/05-success.png" alt="Field Orders — Resultado de sucesso" width="260" />
 
-## Autenticação Firebase
+## Fluxo principal
 
-1. Crie um projeto no Firebase Console e habilite **Authentication → Sign-in method → Email/Password**. Não é necessário habilitar login anônimo.
-2. Registre o aplicativo Android usando o package da tabela abaixo. Baixe seu `google-services.json`.
-3. No GitHub deste repositório, crie o secret de Actions **FIREBASE_CONFIG_JSON** com o JSON inteiro do aplicativo correspondente. O script CI valida o package e gera um asset de configuração; o arquivo pessoal não é versionado.
-4. Execute a esteira novamente para gerar um APK configurado. Para desenvolvimento local: `FIREBASE_CONFIG_JSON="$(cat /caminho/google-services.json)" python3 scripts/configure_firebase.py`.
-5. Crie conta no aplicativo, saia, entre novamente, envie recuperação de senha e verificação de e-mail. Firebase restaura a sessão. Senhas não são salvas pelo aplicativo.
+1. Entre em modo local e crie um pedido com a simulação offline.
+2. Confira o pedido salvo e pendente.
+3. Reative a conectividade simulada e agende sincronização.
+4. Provoque uma edição remota pelo simulador e abra o conflito.
+5. Escolha manter a versão local ou aceitar a remota; observe a mudança de revisão.
 
-Sem configuração, o APK oferece **demonstração local** explicitamente identificada. Ela não autentica no Firebase. Autenticação real, entrega de e-mails e isolamento Firestore exigem validar com seu projeto. Os dados locais são separados pelo hash SHA-256 do UID; isso é organização por conta, não criptografia de dados em repouso. Firebase Auth identifica o usuário, mas não transforma simuladores de negócio em uma API de pagamentos autorizada.
+## Executar e validar
 
-## Experiência e animação
+JDK 17, Android SDK 35 e Android 8+. Use -PincludeAndroid=true para incluir o aplicativo.
 
-Onboarding, splash, formulários de login/cadastro/recuperação, navegação com transições, feedback de carregamento/sucesso/erro via Lottie e perfil. As animações geométricas em `src/main/assets/motion_*.json` foram criadas para este projeto; não dependem de downloads em tempo de execução. Layout Compose com rolagem, estados vazios e componentes Material 3. Testes visuais e acessibilidade no aparelho ainda são necessários.
+```sh
+./gradlew -PincludeAndroid=true :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
 
-## Build e validação
+Configuração, Firebase quando aplicável, assinatura e comandos adicionais: [referência técnica](docs/referencia-tecnica.md).
 
-A esteira `.github/workflows/ci.yml` executa testes de domínio e/ou SDK, testes de isolamento de sessão, Android Lint e montagem de APK debug. Em **Actions → Tests and APK → Artifacts**, baixe o ZIP de APK e extraia o `.apk`. A chave debug é preservada por cache quando disponível; se o cache for perdido, poderá ser necessário desinstalar a versão anterior. Esse APK é para demonstração, sem publicação de release.
+[Abrir a execução verificada no GitHub Actions](https://github.com/brunobredadeveloper/offline-first-orders/actions/runs/38172947996). A conclusão dessa execução é **success**; consulte os artefatos e a revisão de código em [evidências](docs/evidencias.md).
 
-Veja `docs/advanced-experience.md` para o roteiro manual. Testes automatizados de núcleo não substituem teste de navegação e integração Firebase em um celular.
+## Limites do produto
 
+O remoto é um simulador persistente no próprio aparelho; não há servidor de pedidos conectado. Firebase opcional autentica, mas não transforma o simulador em integração com ERP. Não há cobrança financeira real.
 
-## Clean Code, MVVM e SOLID
+## Para quem revisa o portfólio
 
-ViewModels recebem ports por construtor e a UI observa estados. Casos de uso, adapters e injeção manual estão descritos em [Arquitetura e decisões](docs/architecture.md), com os contratos e os testes correspondentes.
+Equipes de vendas e engenharia mobile interessadas em operações offline-first. As [decisões de engenharia](docs/engenharia.md) conectam responsabilidades, arquivos e testes. O [roteiro funcional](docs/fluxos.md) ajuda a avaliar comportamento, falhas e preservação de dados. Funcionalidade planejada não é apresentada como implementada.
+
+## Próximos passos
+
+- Validar os percursos no dispositivo real e registrar os resultados.
+- Revisar acessibilidade, interrupções e falhas de armazenamento/rede aplicáveis.
+- Concluir requisitos de distribuição, suporte e segurança antes de uso comercial.
+
+Código, mídias e dependências mantêm seus respectivos termos. Consulte os créditos e os avisos existentes no repositório.
